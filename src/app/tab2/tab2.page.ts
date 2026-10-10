@@ -76,6 +76,20 @@ export class Tab2Page implements OnInit {
     return this.counterService.counters().reduce((sum, current) => sum + current.value, 0);
   });
 
+  minMaxValues = computed(() => {
+    const list = this.counterService.counters();
+    if (list.length === 0) {
+      return { min: 0, max: 0 };
+    }
+    
+    const values = list.map(c => c.value);
+    
+    return {
+      min: Math.min(...values),
+      max: Math.max(...values)
+    };
+  });
+
   async ngOnInit(): Promise<void> {
     await this.counterService.initialize();
   }

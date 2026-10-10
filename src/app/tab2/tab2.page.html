@@ -41,6 +41,11 @@
       </ion-button>
     </div>
 
+    <div class="min-max-container">
+        <ion-badge color="tertiary">Minimální hodnota: {{ minMaxValues().min }}</ion-badge>
+        <ion-badge color="warning">Maximální hodnota: {{ minMaxValues().max }}</ion-badge>
+    </div>
+
     @if (displayCounters().length === 0) {
       <p class="state-message">Nenalezeny žádné výsledky.</p>
     } @else {
