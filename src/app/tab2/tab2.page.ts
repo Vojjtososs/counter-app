@@ -1,5 +1,6 @@
 import { Component, inject, OnInit, computed, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
+import { FirebaseAuthService } from '../services/firebase-auth.service';
 import {
   AlertController,
   IonBadge,
@@ -50,6 +51,8 @@ export class Tab2Page implements OnInit {
   readonly counterService = inject(CounterService);
   private readonly alertCtrl = inject(AlertController);
   private readonly toastCtrl = inject(ToastController);
+  readonly auth = inject(FirebaseAuthService);
+  readonly authError = signal('');
 
   // Signály pro vyhledávání a řazení
   searchQuery = signal('');
@@ -92,6 +95,13 @@ export class Tab2Page implements OnInit {
 
   async ngOnInit(): Promise<void> {
     await this.counterService.initialize();
+
+    try {
+      await this.auth.initialize();
+    } catch (error) {
+      console.error(error);
+      this.authError.set('Přihlášení se nezdařilo. Zkontrolujte konfiguraci.');
+    }
   }
 
   async remove(id: string): Promise<void> {
