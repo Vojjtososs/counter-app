@@ -21,7 +21,7 @@ import {
   IonToolbar,
   ToastController,
 } from '@ionic/angular';
-import { CounterService } from '../services/counter.service';
+import { FirebaseCounterService } from '../services/firebase-counter.service';
 
 @Component({
   selector: 'app-tab2',
@@ -48,11 +48,11 @@ import { CounterService } from '../services/counter.service';
   ],
 })
 export class Tab2Page implements OnInit {
-  readonly counterService = inject(CounterService);
   private readonly alertCtrl = inject(AlertController);
   private readonly toastCtrl = inject(ToastController);
   readonly auth = inject(FirebaseAuthService);
   readonly authError = signal('');
+  readonly counterService = inject(FirebaseCounterService);
 
   // Signály pro vyhledávání a řazení
   searchQuery = signal('');
@@ -95,16 +95,11 @@ export class Tab2Page implements OnInit {
 
   async ngOnInit(): Promise<void> {
     await this.counterService.initialize();
-
-    try {
-      await this.auth.initialize();
-    } catch (error) {
-      console.error(error);
-      this.authError.set('Přihlášení se nezdařilo. Zkontrolujte konfiguraci.');
-    }
   }
 
-  async remove(id: string): Promise<void> {
+  
+
+ /* async remove(id: string): Promise<void> {
     await this.counterService.remove(id);
     
     // Zobrazení toastu po smazání
@@ -139,5 +134,5 @@ export class Tab2Page implements OnInit {
       ]
     });
     await alert.present();
-  }
+  }*/
 }

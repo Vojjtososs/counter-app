@@ -17,13 +17,15 @@
 </ion-header>
 
 <ion-content [fullscreen]="true" class="ion-padding">
-    @if (authError()) {
-    <p class="state-message">{{ authError() }}</p>
-  } @else if (auth.userId(); as uid) {
-    <p class="state-message">Anonymní uživatel: {{ uid }}</p>
-  } @else {
-    <p class="state-message">Přihlašuji…</p>
-  }
+  @if (counterService.errorMessage()) {
+  <p class="state-message">{{ counterService.errorMessage() }}</p>
+}
+
+@if (auth.userId(); as uid) {
+  <p class="state-message">Anonymní uživatel: {{ uid }}</p>
+}
+
+
   @if (!counterService.initialized()) {
     <div class="state-message">
       <ion-spinner></ion-spinner>
@@ -42,10 +44,6 @@
         <ion-select-option value="name">Podle názvu</ion-select-option>
         <ion-select-option value="value">Podle hodnoty</ion-select-option>
       </ion-select>
-
-      <ion-button color="danger" fill="outline" size="small" (click)="clear()">
-        Vymazat vše
-      </ion-button>
     </div>
 
     <div class="min-max-container">
@@ -65,16 +63,6 @@
             </ion-label>
 
             <ion-note slot="end">{{ counter.value }}</ion-note>
-
-            <ion-button
-              slot="end"
-              color="danger"
-              fill="clear"
-              aria-label="Odstranit záznam"
-              (click)="remove(counter.id)"
-            >
-              Odstranit
-            </ion-button>
           </ion-item>
         }
       </ion-list>

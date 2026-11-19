@@ -66,7 +66,7 @@ export class CounterService {
   private async persist(): Promise<void> {
     await Preferences.set({
       key: this.storageKey,
-      value: JSON.stringify(this.countersState()),
+      value: JSON.stringify(this.countersState()),  
     });
   }
 }
