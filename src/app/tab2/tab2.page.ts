@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, computed, signal } from '@angular/core';
+import { Component, inject, computed, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FirebaseAuthService } from '../services/firebase-auth.service';
 import {
@@ -47,12 +47,29 @@ import { FirebaseCounterService } from '../services/firebase-counter.service';
     IonToolbar,
   ],
 })
-export class Tab2Page implements OnInit {
+export class Tab2Page {
   private readonly alertCtrl = inject(AlertController);
   private readonly toastCtrl = inject(ToastController);
   readonly auth = inject(FirebaseAuthService);
-  readonly authError = signal('');
   readonly counterService = inject(FirebaseCounterService);
+  readonly signingOut = signal(false);
+  readonly logoutError = signal('');
+
+  async logout(): Promise<void> {
+    if (this.signingOut()) {
+      return;
+    }
+
+    this.logoutError.set('');
+    this.signingOut.set(true);
+    try {
+      await this.auth.logout();
+    } catch {
+      this.logoutError.set('Odhlášení se nezdařilo. Zkuste to znovu.');
+    } finally {
+      this.signingOut.set(false);
+    }
+  }
 
   // Signály pro vyhledávání a řazení
   searchQuery = signal('');
@@ -62,9 +79,9 @@ export class Tab2Page implements OnInit {
   displayCounters = computed(() => {
     let list = this.counterService.counters();
     const query = this.searchQuery().toLowerCase();
-    
+
     if (query) {
-      list = list.filter(c => c.name.toLowerCase().includes(query));
+      list = list.filter((c) => c.name.toLowerCase().includes(query));
     }
 
     // Vytvoříme kopii pole [...list], abychom nemutovali původní data
@@ -76,7 +93,9 @@ export class Tab2Page implements OnInit {
 
   // Vypočítaný součet všech hodnot
   totalSum = computed(() => {
-    return this.counterService.counters().reduce((sum, current) => sum + current.value, 0);
+    return this.counterService
+      .counters()
+      .reduce((sum, current) => sum + current.value, 0);
   });
 
   minMaxValues = computed(() => {
@@ -84,22 +103,16 @@ export class Tab2Page implements OnInit {
     if (list.length === 0) {
       return { min: 0, max: 0 };
     }
-    
-    const values = list.map(c => c.value);
-    
+
+    const values = list.map((c) => c.value);
+
     return {
       min: Math.min(...values),
-      max: Math.max(...values)
+      max: Math.max(...values),
     };
   });
 
-  async ngOnInit(): Promise<void> {
-    await this.counterService.initialize();
-  }
-
-  
-
- /* async remove(id: string): Promise<void> {
+  /* async remove(id: string): Promise<void> {
     await this.counterService.remove(id);
     
     // Zobrazení toastu po smazání

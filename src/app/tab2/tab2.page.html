@@ -5,67 +5,76 @@
       <ion-badge color="primary" class="ion-margin-end">
         Součet: {{ totalSum() }}
       </ion-badge>
+      <ion-button
+        slot="end"
+        fill="clear"
+        [disabled]="signingOut()"
+        (click)="logout()"
+      >
+        Odhlásit se
+      </ion-button>
     </ion-buttons>
   </ion-toolbar>
-  
+
   <ion-toolbar>
-    <ion-searchbar 
-      placeholder="Hledat počítadlo..." 
+    <ion-searchbar
+      placeholder="Hledat počítadlo..."
       (ionInput)="searchQuery.set($any($event).target.value)"
     ></ion-searchbar>
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true" class="ion-padding">
-  @if (counterService.errorMessage()) {
+  @if (auth.user(); as user) {
+  <p class="state-message">
+    Účet: {{ user.email || user.displayName || user.uid }}
+  </p>
+  } @if (logoutError()) {
+  <p class="state-message" role="alert">{{ logoutError() }}</p>
+  } @if (counterService.errorMessage()) {
   <p class="state-message">{{ counterService.errorMessage() }}</p>
-}
-
-@if (auth.userId(); as uid) {
-  <p class="state-message">Anonymní uživatel: {{ uid }}</p>
-}
-
-
-  @if (!counterService.initialized()) {
-    <div class="state-message">
-      <ion-spinner></ion-spinner>
-      <p>Načítám historii…</p>
-    </div>
+  } @if (!counterService.initialized()) {
+  <div class="state-message">
+    <ion-spinner></ion-spinner>
+    <p>Načítám historii…</p>
+  </div>
   } @else if (counterService.counters().length === 0) {
-    <p class="state-message">Historie je zatím prázdná.</p>
+  <p class="state-message">Historie je zatím prázdná.</p>
   } @else {
-    <div class="history-header">
-      
-      <ion-select 
-        [value]="sortType()" 
-        (ionChange)="sortType.set($event.detail.value)" 
-        interface="popover"
-      >
-        <ion-select-option value="name">Podle názvu</ion-select-option>
-        <ion-select-option value="value">Podle hodnoty</ion-select-option>
-      </ion-select>
-    </div>
+  <div class="history-header">
+    <ion-select
+      [value]="sortType()"
+      (ionChange)="sortType.set($event.detail.value)"
+      interface="popover"
+    >
+      <ion-select-option value="name">Podle názvu</ion-select-option>
+      <ion-select-option value="value">Podle hodnoty</ion-select-option>
+    </ion-select>
+  </div>
 
-    <div class="min-max-container">
-        <ion-badge color="tertiary">Minimální hodnota: {{ minMaxValues().min }}</ion-badge>
-        <ion-badge color="warning">Maximální hodnota: {{ minMaxValues().max }}</ion-badge>
-    </div>
+  <div class="min-max-container">
+    <ion-badge color="tertiary"
+      >Minimální hodnota: {{ minMaxValues().min }}</ion-badge
+    >
+    <ion-badge color="warning"
+      >Maximální hodnota: {{ minMaxValues().max }}</ion-badge
+    >
+  </div>
 
-    @if (displayCounters().length === 0) {
-      <p class="state-message">Nenalezeny žádné výsledky.</p>
-    } @else {
-      <ion-list>
-        @for (counter of displayCounters(); track counter.id) {
-          <ion-item>
-            <ion-label>
-              <h2>{{ counter.name }}</h2>
-              <p>{{ counter.createdAt | date: 'd. M. y, HH:mm' }}</p>
-            </ion-label>
+  @if (displayCounters().length === 0) {
+  <p class="state-message">Nenalezeny žádné výsledky.</p>
+  } @else {
+  <ion-list>
+    @for (counter of displayCounters(); track counter.id) {
+    <ion-item>
+      <ion-label>
+        <h2>{{ counter.name }}</h2>
+        <p>{{ counter.createdAt | date: 'd. M. y, HH:mm' }}</p>
+      </ion-label>
 
-            <ion-note slot="end">{{ counter.value }}</ion-note>
-          </ion-item>
-        }
-      </ion-list>
+      <ion-note slot="end">{{ counter.value }}</ion-note>
+    </ion-item>
     }
-  }
+  </ion-list>
+  } }
 </ion-content>

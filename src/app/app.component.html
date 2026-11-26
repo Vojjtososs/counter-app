@@ -1,3 +1,50 @@
 <ion-app>
-  <ion-router-outlet></ion-router-outlet>
+  @if (!auth.ready()) {
+    <ion-content class="ion-padding">
+      <ion-spinner aria-hidden="true"></ion-spinner>
+      <p role="status">Ověřuji přihlášení…</p>
+    </ion-content>
+  } @else if (auth.user()) {
+    <ion-router-outlet></ion-router-outlet>
+  } @else {
+    <ion-header>
+      <ion-toolbar>
+        <ion-title>{{ registering ? 'Registrace' : 'Přihlášení' }}</ion-title>
+      </ion-toolbar>
+    </ion-header>
+    <ion-content class="ion-padding">
+      <form #form="ngForm" (ngSubmit)="submit(form)">
+        <ion-input
+          label="E-mail"
+          labelPlacement="stacked"
+          type="email"
+          autocomplete="email"
+          name="email"
+          [(ngModel)]="email"
+          [disabled]="busy()"
+          required
+          email
+        ></ion-input>
+        <ion-input
+          label="Heslo"
+          labelPlacement="stacked"
+          type="password"
+          [autocomplete]="registering ? 'new-password' : 'current-password'"
+          name="password"
+          [(ngModel)]="password"
+          [disabled]="busy()"
+          required
+        ></ion-input>
+        @if (errorMessage()) {
+          <p role="alert">{{ errorMessage() }}</p>
+        }
+        <ion-button type="submit" expand="block" [disabled]="form.invalid || busy()">
+          {{ registering ? 'Vytvořit účet' : 'Přihlásit se' }}
+        </ion-button>
+        <ion-button type="button" fill="clear" [disabled]="busy()" (click)="toggleMode()">
+          {{ registering ? 'Už mám účet' : 'Chci vytvořit účet' }}
+        </ion-button>
+      </form>
+    </ion-content>
+  }
 </ion-app>

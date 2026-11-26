@@ -1,5 +1,12 @@
-import { Injectable, inject, signal } from '@angular/core';
-import { collection, doc, onSnapshot, orderBy, query, setDoc } from 'firebase/firestore';
+import { Injectable, inject, signal, computed, effect } from '@angular/core';
+import {
+  collection,
+  doc,
+  onSnapshot,
+  orderBy,
+  query,
+  setDoc,
+} from 'firebase/firestore';
 import { firestore } from '../firebase.client';
 import { SavedCounter } from '../models/saved-counter';
 import { FirebaseAuthService } from './firebase-auth.service';
@@ -11,60 +18,83 @@ export class FirebaseCounterService {
   private readonly initializedState = signal(false);
   private readonly errorState = signal('');
 
-  readonly counters = this.countersState.asReadonly();
-  readonly initialized = this.initializedState.asReadonly();
-  readonly errorMessage = this.errorState.asReadonly();
+  readonly initialized = computed(
+    () => this.owner() === this.auth.userId() && this.initializedState(),
+  );
+  readonly counters = computed(() =>
+    this.initialized() ? this.countersState() : [],
+  );
+  readonly errorMessage = computed(() =>
+    this.owner() === this.auth.userId() ? this.errorState() : '',
+  );
 
-  private connectionPromise: Promise<void> | null = null;
+  private readonly owner = signal<string | null>(null);
 
-    initialize(): Promise<void> {
-    if (this.connectionPromise === null) {
-        this.connectionPromise = this.connect();
-    }
+  constructor() {
+    effect((onCleanup) => {
+      const uid = this.auth.userId();
+      this.owner.set(uid);
+      this.countersState.set([]);
+      this.initializedState.set(false);
+      this.errorState.set('');
 
-    return this.connectionPromise;
-    }
+      if (uid !== null) {
+        const unsubscribe = this.connect(uid);
+        if (unsubscribe) {
+          onCleanup(unsubscribe);
+        }
+      }
+    });
+  }
 
-    private async userCounters() {
-        const uid = await this.auth.initialize();
-        return collection(firestore, 'users', uid, 'counters');
-    }
-
-   private async connect(): Promise<void> {
+  private connect(uid: string) {
     try {
-        const counters = await this.userCounters();
-        const countersQuery = query(counters, orderBy('createdAt', 'desc'));
+      const counters = this.userCounters(uid);
+      const countersQuery = query(counters, orderBy('createdAt', 'desc'));
 
-        onSnapshot(
+      return onSnapshot(
         countersQuery,
         (snapshot) => {
-            const items = snapshot.docs.map((item) => item.data() as SavedCounter);
-            this.countersState.set(items);
-            this.initializedState.set(true);
+          const items = snapshot.docs.map(
+            (item) => item.data() as SavedCounter,
+          );
+          this.countersState.set(items);
+          this.initializedState.set(true);
         },
         (error) => {
-            console.error(error);
-            this.errorState.set('Živou historii se nepodařilo načíst.');
-            this.initializedState.set(true);
+          console.error(error);
+          this.errorState.set('Živou historii se nepodařilo načíst.');
+          this.initializedState.set(true);
         },
-        );
+      );
     } catch (error) {
-        console.error(error);
-        this.errorState.set('Připojení k historii se nezdařilo.');
-        this.initializedState.set(true);
+      console.error(error);
+      this.errorState.set('Připojení k historii se nezdařilo.');
+      this.initializedState.set(true);
+      return undefined;
     }
+  }
+
+  private userCounters(uid: string) {
+    return collection(firestore, 'users', uid, 'counters');
+  }
+
+  async add(counter: SavedCounter): Promise<void> {
+    const uid = this.auth.userId();
+    if (uid === null) {
+      return;
     }
 
-    async add(counter: SavedCounter): Promise<void> {
     this.errorState.set('');
 
     try {
-        const counters = await this.userCounters();
-        await setDoc(doc(counters, counter.id), counter);
-        await this.connect();
+      const counters = this.userCounters(uid);
+      await setDoc(doc(counters, counter.id), counter);
     } catch (error) {
-        console.error(error);
+      console.error(error);
+      if (this.auth.userId() === uid) {
         this.errorState.set('Záznam se nepodařilo uložit.');
+      }
     }
-    }
+  }
 }

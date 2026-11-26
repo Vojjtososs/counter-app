@@ -1,32 +1,45 @@
-import { Injectable, signal } from '@angular/core';
-import { signInAnonymously } from 'firebase/auth';
+import {
+  Injectable,
+  signal,
+  DestroyRef,
+  computed,
+  inject,
+} from '@angular/core';
+import {
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signOut,
+  type User,
+} from 'firebase/auth';
 import { firebaseAuth } from '../firebase.client';
 
 @Injectable({ providedIn: 'root' })
 export class FirebaseAuthService {
-  private signInPromise: Promise<string> | null = null;
-  private readonly userIdState = signal<string | null>(null);
-  readonly userId = this.userIdState.asReadonly();
+  private readonly userState = signal<User | null>(null);
+  private readonly readyState = signal(false);
 
-  initialize(): Promise<string> {
-    if (this.signInPromise === null) {
-        this.signInPromise = this.signIn();
-    }
+  readonly user = this.userState.asReadonly();
+  readonly ready = this.readyState.asReadonly();
+  readonly userId = computed(() => this.user()?.uid ?? null);
 
-    return this.signInPromise;
-    }
+  constructor() {
+    const unsubscribe = onAuthStateChanged(firebaseAuth, (user) => {
+      this.userState.set(user?.isAnonymous ? null : user);
+      this.readyState.set(true);
+    });
+    inject(DestroyRef).onDestroy(unsubscribe);
+  }
 
-  private async signIn(): Promise<string> {
-    await firebaseAuth.authStateReady();
+  async register(email: string, password: string): Promise<void> {
+    await createUserWithEmailAndPassword(firebaseAuth, email, password);
+  }
 
-    let user = firebaseAuth.currentUser;
-    if (user === null) {
-        const result = await signInAnonymously(firebaseAuth);
-        user = result.user;
-    }
+  async login(email: string, password: string): Promise<void> {
+    await signInWithEmailAndPassword(firebaseAuth, email, password);
+  }
 
-    this.userIdState.set(user.uid);
-    return user.uid;
+  async logout(): Promise<void> {
+    await signOut(firebaseAuth);
+  }
 }
-}
-
